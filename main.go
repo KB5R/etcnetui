@@ -12,6 +12,7 @@ type Iface struct {
 	Path        string
 	Options     map[string]string
 	IPv4Address []string
+	IPv4Route   []string
 }
 
 func main() {
@@ -30,31 +31,36 @@ func main() {
 
 		ifaceName := entry.Name()
 		ifacePath := filepath.Join(etcnetPath, ifaceName)
-		optionsPath := filepath.Join(ifacePath, "options")
 
-		data, err := os.ReadFile(optionsPath)
+		iface, err := parseOptions(ifaceName, ifacePath)
 		if err != nil {
-			fmt.Println("iface:", ifaceName, "options: not found")
+			fmt.Println("iface:", ifaceName, "error:", err)
 			continue
 		}
-
-		iface := parseOptions(ifaceName, ifacePath, string(data))
 
 		fmt.Println("iface:", iface.Name)
 		fmt.Println("  path:", iface.Path)
 		fmt.Println("  type:", iface.Options["TYPE"])
 		fmt.Println("  bootproto:", iface.Options["BOOTPROTO"])
 		fmt.Println("  ipv4:", iface.IPv4Address)
+		fmt.Println("  routes:", iface.IPv4Route)
 	}
 }
 
-func parseOptions(ifaceName string, ifacePath string, data string) Iface {
+func parseOptions(ifaceName string, ifacePath string) (Iface, error) {
 	// Функция разбивки  ключ значения, тоесть представим BOOTPROTO=static
 	// key = BOOTPROTO value = static
 	// Что бы по умному понимать значение и не создавать их а изменять
+	optionsPath := filepath.Join(ifacePath, "options")
+
+	data, err := os.ReadFile(optionsPath)
+	if err != nil {
+		return Iface{}, err
+	}
+
 	options := make(map[string]string)
 
-	lines := strings.Split(data, "\n")
+	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
@@ -74,11 +80,11 @@ func parseOptions(ifaceName string, ifacePath string, data string) Iface {
 	}
 
 	ipv4Address := []string{}
-	ipv4Path := filepath.Join(ifacePath, "ipv4address")
-	ipv4Data, err := os.ReadFile(ipv4Path)
+	ipv4PathAddress := filepath.Join(ifacePath, "ipv4address")
+	ipv4DataAddress, err := os.ReadFile(ipv4PathAddress)
 	if err == nil {
-		ipv4Lines := strings.Split(string(ipv4Data), "\n")
-		for _, line := range ipv4Lines {
+		ipv4LinesAddress := strings.Split(string(ipv4DataAddress), "\n")
+		for _, line := range ipv4LinesAddress {
 			line = strings.TrimSpace(line)
 			if line == "" {
 				continue
@@ -88,10 +94,25 @@ func parseOptions(ifaceName string, ifacePath string, data string) Iface {
 
 	}
 
+	ipv4Route := []string{}
+	ipv4PathRoute := filepath.Join(ifacePath, "ipv4route")
+	ipv4DataRoute, err := os.ReadFile(ipv4PathRoute)
+	if err == nil {
+		ipv4LinesRoute := strings.Split(string(ipv4DataRoute), "\n")
+		for _, line := range ipv4LinesRoute {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			ipv4Route = append(ipv4Route, line)
+		}
+	}
+
 	return Iface{
 		Name:        ifaceName,
 		Path:        ifacePath,
 		Options:     options,
 		IPv4Address: ipv4Address,
-	}
+		IPv4Route:   ipv4Route,
+	}, nil
 }
