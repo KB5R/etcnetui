@@ -51,6 +51,7 @@ func parseOptions(ifaceName string, ifacePath string) (Iface, error) {
 	// Функция разбивки  ключ значения, тоесть представим BOOTPROTO=static
 	// key = BOOTPROTO value = static
 	// Что бы по умному понимать значение и не создавать их а изменять
+	// Так же добавлен парс ip и route
 	optionsPath := filepath.Join(ifacePath, "options")
 
 	data, err := os.ReadFile(optionsPath)
