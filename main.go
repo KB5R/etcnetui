@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,15 @@ type AppState struct {
 func main() {
 	etcnetPath := "testdata/ifaces"
 
+	selectedIndex := 0
+
+	if len(os.Args) > 1 {
+		value, err := strconv.Atoi(os.Args[1])
+		if err == nil {
+			selectedIndex = value
+		}
+	}
+
 	ifaces, err := loadIfaces(etcnetPath)
 	if err != nil {
 		fmt.Println("error loading ifaces:", err)
@@ -31,7 +41,7 @@ func main() {
 
 	state := AppState{
 		Ifaces:        ifaces,
-		SelectedIndex: 1,
+		SelectedIndex: selectedIndex,
 	}
 
 	printState(state)
