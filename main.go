@@ -23,14 +23,28 @@ type AppState struct {
 func main() {
 	etcnetPath := "testdata/ifaces"
 
-	entries, err := os.ReadDir(etcnetPath)
+	ifaces, err := loadIfaces(etcnetPath)
 	if err != nil {
-		fmt.Println("error reading ifaces:", err)
+		fmt.Println("error loading ifaces:", err)
 		return
 	}
 
+	state := AppState{
+		Ifaces:        ifaces,
+		SelectedIndex: 1,
+	}
+
+	printState(state)
+	printSelectedIface(state)
+}
+
+func loadIfaces(etcnetPath string) ([]Iface, error) {
 	var ifaces []Iface
 
+	entries, err := os.ReadDir(etcnetPath)
+	if err != nil {
+		return nil, err
+	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -41,21 +55,49 @@ func main() {
 
 		iface, err := parseOptions(ifaceName, ifacePath)
 		if err != nil {
-			fmt.Println("iface:", ifaceName, "error:", err)
 			continue
 		}
 
 		ifaces = append(ifaces, iface)
 	}
+	return ifaces, nil
+}
 
-	for index, iface := range ifaces {
-		fmt.Println(index, "iface:", iface.Name)
-		fmt.Println("  path:", iface.Path)
-		fmt.Println("  type:", iface.Options["TYPE"])
-		fmt.Println("  bootproto:", iface.Options["BOOTPROTO"])
-		fmt.Println("  ipv4:", iface.IPv4Address)
-		fmt.Println("  routes:", iface.IPv4Route)
+func printState(state AppState) {
+	for index, iface := range state.Ifaces {
+		marker := " "
+		if index == state.SelectedIndex {
+			marker = ">"
+		}
+		ipv4 := "none"
+		if len(iface.IPv4Address) > 0 {
+			ipv4 = iface.IPv4Address[0]
+		}
+		route := "none"
+		if len(iface.IPv4Route) > 0 {
+			route = iface.IPv4Route[0]
+		}
+		fmt.Println(marker, index, "iface:", iface.Name, "type:", iface.Options["TYPE"], iface.Options["BOOTPROTO"], ipv4, route)
 	}
+}
+
+func printSelectedIface(state AppState) {
+	if len(state.Ifaces) == 0 {
+		fmt.Println("no ifaces found")
+		return
+	}
+	if state.SelectedIndex < 0 || state.SelectedIndex >= len(state.Ifaces) {
+		fmt.Println("selected iface index is out of range")
+		return
+	}
+	iface := state.Ifaces[state.SelectedIndex]
+	fmt.Println()
+	fmt.Println("selected iface:", iface.Name)
+	fmt.Println("path:", iface.Path)
+	fmt.Println("type:", iface.Options["TYPE"])
+	fmt.Println("bootproto:", iface.Options["BOOTPROTO"])
+	fmt.Println("ipv4:", iface.IPv4Address)
+	fmt.Println("routes:", iface.IPv4Route)
 }
 
 func parseOptions(ifaceName string, ifacePath string) (Iface, error) {
