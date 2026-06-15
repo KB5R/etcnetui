@@ -15,6 +15,11 @@ type Iface struct {
 	IPv4Route   []string
 }
 
+type AppState struct {
+	Ifaces        []Iface
+	SelectedIndex int
+}
+
 func main() {
 	etcnetPath := "testdata/ifaces"
 
@@ -23,6 +28,8 @@ func main() {
 		fmt.Println("error reading ifaces:", err)
 		return
 	}
+
+	var ifaces []Iface
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -38,7 +45,11 @@ func main() {
 			continue
 		}
 
-		fmt.Println("iface:", iface.Name)
+		ifaces = append(ifaces, iface)
+	}
+
+	for index, iface := range ifaces {
+		fmt.Println(index, "iface:", iface.Name)
 		fmt.Println("  path:", iface.Path)
 		fmt.Println("  type:", iface.Options["TYPE"])
 		fmt.Println("  bootproto:", iface.Options["BOOTPROTO"])
@@ -92,7 +103,6 @@ func parseOptions(ifaceName string, ifacePath string) (Iface, error) {
 			}
 			ipv4Address = append(ipv4Address, line)
 		}
-
 	}
 
 	ipv4Route := []string{}
